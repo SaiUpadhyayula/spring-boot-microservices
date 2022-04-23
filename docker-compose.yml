@@ -1,0 +1,80 @@
+services:
+  ## MySQL Docker Compose Config
+  mysql:
+    container_name: mysql
+    image: mysql:8.0.28
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: 'db'
+      MYSQL_USER: 'user'
+      MYSQL_PASSWORD: 'mysql'
+      MYSQL_ROOT_PASSWORD: 'mysql'
+    ports:
+      - 3316:3306
+    expose:
+      - 3316
+    volumes:
+      - ./my-sql-data:/var/lib/mysql
+
+## Mongo Docker Compose Config
+  mongo:
+    container_name: mongo
+    image: mongo:4.4.14-rc0-focal
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: p9ssw0rd
+    ports:
+      - 27018:27017
+    expose:
+      - 27018
+    volumes:
+      - ./mongo-data:/data/db
+
+## Product-Service Docker Compose Config
+  product-service:
+    container_name: product-service
+    image: product-service
+    mem_limit: 512m
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    networks:
+      - spring
+      - mongo
+    depends_on:
+      - mongo
+
+## Order-Service Docker Compose Config
+  order-service:
+    container_name: order-service
+    image: order-service
+    mem_limit: 512m
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    networks:
+      - spring
+      - mysql
+    depends_on:
+      - mysql
+
+## Inventory-Service Docker Compose Config
+  inventory-service:
+    container_name: inventory-service
+    image: inventory-service
+    mem_limit: 512m
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    networks:
+      - spring
+      - mysql
+    depends_on:
+      - mysql
+
+## Network Config
+networks:
+  mysql:
+    driver: bridge
+  mongo:
+    driver: bridge
+  spring:
+    driver: bridge
