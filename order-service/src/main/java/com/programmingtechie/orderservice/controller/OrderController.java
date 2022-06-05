@@ -24,10 +24,10 @@ public class OrderController {
     @TimeLimiter(name = "inventory")
     @Retry(name = "inventory")
     public CompletableFuture<String> placeOrder(@RequestBody OrderRequest orderRequest) {
-        return CompletableFuture.supplyAsync(()-> orderService.placeOrder(orderRequest));
+        return CompletableFuture.supplyAsync(() -> orderService.placeOrder(orderRequest));
     }
 
-    public CompletableFuture<String> fallbackMethod(OrderRequest orderRequest, RuntimeException runtimeException){
-        return CompletableFuture.supplyAsync(()-> "Oops! Something went wrong, please order after some time!");
+    public CompletableFuture<String> fallbackMethod(OrderRequest orderRequest, RuntimeException runtimeException) {
+        return CompletableFuture.supplyAsync(() -> "Oops! Something went wrong, please order after some time!");
     }
 }
