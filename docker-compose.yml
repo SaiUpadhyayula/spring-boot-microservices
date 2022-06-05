@@ -13,10 +13,12 @@ services:
       - 3316:3306
     expose:
       - 3316
+    networks:
+      - mysql
     volumes:
       - ./my-sql-data:/var/lib/mysql
 
-## Mongo Docker Compose Config
+  ## Mongo Docker Compose Config
   mongo:
     container_name: mongo
     image: mongo:4.4.14-rc0-focal
@@ -28,10 +30,101 @@ services:
       - 27018:27017
     expose:
       - 27018
+    networks:
+      - mongo
     volumes:
       - ./mongo-data:/data/db
 
-## Product-Service Docker Compose Config
+  ## Keycloak Config with Mysql database
+  keycloak-mysql:
+    image: mysql:5.7
+    volumes:
+      - ./mysql_keycloak_data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: keycloak
+      MYSQL_USER: keycloak
+      MYSQL_PASSWORD: password
+    networks:
+      - app
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:18.0.0
+    environment:
+      DB_VENDOR: MYSQL
+      DB_ADDR: mysql
+      DB_DATABASE: keycloak
+      DB_USER: keycloak
+      DB_PASSWORD: password
+      KEYCLOAK_USER: admin
+      KEYCLOAK_PASSWORD: admin
+    ports:
+      - 8181:8080
+    depends_on:
+      - keycloak-mysql
+    networks:
+      - app
+
+  ## Zookeeper Config
+  zookeeper:
+    image: zookeeper:3.7.1
+    container_name: zookeeper
+    ports:
+      - 2181:2181
+    networks:
+      - app
+
+  ## Kafka Config
+  kafka:
+    image: confluentinc/cp-kafka:7.0.1
+    container_name: kafka
+    ports:
+      - 9092:9092
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+    networks:
+      - app
+
+  ## Zipkin
+  zipkin:
+    image: openzipkin/zipkin
+    container_name: zipkin
+    ports:
+      - 9411:9411
+    networks:
+      - app
+
+  ## Eureka Server
+  discovery-server:
+    image: discovery-server
+    container_name: discovery-server
+    ports:
+      - 8761:8761
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    networks:
+      - app
+    depends_on:
+      - zipkin
+
+  api-gateway:
+    image: api-gateway
+    container_name: api-gateway
+    ports:
+      - 8080:8080
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    networks:
+      - app
+    depends_on:
+      - zipkin
+      - discovery-server
+
+  ## Product-Service Docker Compose Config
   product-service:
     container_name: product-service
     image: product-service
@@ -39,12 +132,14 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     networks:
-      - spring
+      - app
       - mongo
     depends_on:
       - mongo
+      - discovery-server
+      - api-gateway
 
-## Order-Service Docker Compose Config
+  ## Order-Service Docker Compose Config
   order-service:
     container_name: order-service
     image: order-service
@@ -52,12 +147,16 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     networks:
-      - spring
+      - app
       - mysql
     depends_on:
       - mysql
+      - kafka
+      - zipkin
+      - discovery-server
+      - api-gateway
 
-## Inventory-Service Docker Compose Config
+  ## Inventory-Service Docker Compose Config
   inventory-service:
     container_name: inventory-service
     image: inventory-service
@@ -65,10 +164,27 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     networks:
-      - spring
+      - app
       - mysql
     depends_on:
       - mysql
+      - discovery-server
+      - api-gateway
+
+  ## Notification-Service Docker Compose Config
+  notification-service:
+    container_name: notification-service
+    image: notification-service
+    mem_limit: 512m
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    networks:
+      - app
+    depends_on:
+      - zipkin
+      - kafka
+      - discovery-server
+      - api-gateway
 
 ## Network Config
 networks:
@@ -76,5 +192,5 @@ networks:
     driver: bridge
   mongo:
     driver: bridge
-  spring:
+  app:
     driver: bridge
