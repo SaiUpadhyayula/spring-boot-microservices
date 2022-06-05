@@ -17,6 +17,7 @@ services:
       - mysql
     volumes:
       - ./my-sql-data:/var/lib/mysql
+      - ./sql-scripts/init.sql:/data/application/init.sql
 
   ## Mongo Docker Compose Config
   mongo:
@@ -50,6 +51,7 @@ services:
 
   keycloak:
     image: quay.io/keycloak/keycloak:18.0.0
+    command: ["start-dev", "--import-realm"]
     environment:
       DB_VENDOR: MYSQL
       DB_ADDR: mysql
@@ -60,6 +62,8 @@ services:
       KEYCLOAK_PASSWORD: admin
     ports:
       - 8181:8080
+    volumes:
+      - ./realms/realm-export.json:/opt/keycloak/data/import/realm.json:ro
     depends_on:
       - keycloak-mysql
     networks:
@@ -100,7 +104,7 @@ services:
 
   ## Eureka Server
   discovery-server:
-    image: discovery-server
+    image: saiupadhyayula007/discovery-server:v1
     container_name: discovery-server
     ports:
       - 8761:8761
@@ -112,7 +116,7 @@ services:
       - zipkin
 
   api-gateway:
-    image: api-gateway
+    image: saiupadhyayula007/api-gateway:v1
     container_name: api-gateway
     ports:
       - 8080:8080
@@ -123,11 +127,12 @@ services:
     depends_on:
       - zipkin
       - discovery-server
+      - keycloak
 
   ## Product-Service Docker Compose Config
   product-service:
     container_name: product-service
-    image: product-service
+    image: saiupadhyayula007/product-service:v1
     mem_limit: 512m
     environment:
       - SPRING_PROFILES_ACTIVE=docker
@@ -142,7 +147,7 @@ services:
   ## Order-Service Docker Compose Config
   order-service:
     container_name: order-service
-    image: order-service
+    image: saiupadhyayula007/order-service:v1
     mem_limit: 512m
     environment:
       - SPRING_PROFILES_ACTIVE=docker
@@ -159,7 +164,7 @@ services:
   ## Inventory-Service Docker Compose Config
   inventory-service:
     container_name: inventory-service
-    image: inventory-service
+    image: saiupadhyayula007/inventory-service:v1
     mem_limit: 512m
     environment:
       - SPRING_PROFILES_ACTIVE=docker
@@ -174,7 +179,7 @@ services:
   ## Notification-Service Docker Compose Config
   notification-service:
     container_name: notification-service
-    image: notification-service
+    image: saiupadhyayula007/notification-service:v1
     mem_limit: 512m
     environment:
       - SPRING_PROFILES_ACTIVE=docker
