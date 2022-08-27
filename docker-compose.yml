@@ -13,11 +13,8 @@ services:
       - 3316:3306
     expose:
       - 3316
-    networks:
-      - mysql
     volumes:
       - ./my-sql-data:/var/lib/mysql
-      - ./sql-scripts/init.sql:/data/application/init.sql
 
   ## Mongo Docker Compose Config
   mongo:
@@ -31,13 +28,12 @@ services:
       - 27018:27017
     expose:
       - 27018
-    networks:
-      - mongo
     volumes:
       - ./mongo-data:/data/db
 
   ## Keycloak Config with Mysql database
   keycloak-mysql:
+    container_name: keycloak-mysql
     image: mysql:5.7
     volumes:
       - ./mysql_keycloak_data:/var/lib/mysql
@@ -46,12 +42,11 @@ services:
       MYSQL_DATABASE: keycloak
       MYSQL_USER: keycloak
       MYSQL_PASSWORD: password
-    networks:
-      - app
 
   keycloak:
+    container_name: keycloak
     image: quay.io/keycloak/keycloak:18.0.0
-    command: ["start-dev", "--import-realm"]
+    command: [ "start-dev", "--import-realm" ]
     environment:
       DB_VENDOR: MYSQL
       DB_ADDR: mysql
@@ -66,8 +61,6 @@ services:
       - ./realms/realm-export.json:/opt/keycloak/data/import/realm.json:ro
     depends_on:
       - keycloak-mysql
-    networks:
-      - app
 
   ## Zookeeper Config
   zookeeper:
@@ -75,8 +68,6 @@ services:
     container_name: zookeeper
     ports:
       - 2181:2181
-    networks:
-      - app
 
   ## Kafka Config
   kafka:
@@ -90,8 +81,6 @@ services:
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-    networks:
-      - app
 
   ## Zipkin
   zipkin:
@@ -99,8 +88,6 @@ services:
     container_name: zipkin
     ports:
       - 9411:9411
-    networks:
-      - app
 
   ## Eureka Server
   discovery-server:
@@ -110,8 +97,6 @@ services:
       - 8761:8761
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-    networks:
-      - app
     depends_on:
       - zipkin
 
@@ -122,8 +107,6 @@ services:
       - 8080:8080
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-    networks:
-      - app
     depends_on:
       - zipkin
       - discovery-server
@@ -136,9 +119,6 @@ services:
     mem_limit: 512m
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-    networks:
-      - app
-      - mongo
     depends_on:
       - mongo
       - discovery-server
@@ -151,9 +131,6 @@ services:
     mem_limit: 512m
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-    networks:
-      - app
-      - mysql
     depends_on:
       - mysql
       - kafka
@@ -168,9 +145,6 @@ services:
     mem_limit: 512m
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-    networks:
-      - app
-      - mysql
     depends_on:
       - mysql
       - discovery-server
@@ -183,19 +157,8 @@ services:
     mem_limit: 512m
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-    networks:
-      - app
     depends_on:
       - zipkin
       - kafka
       - discovery-server
       - api-gateway
-
-## Network Config
-networks:
-  mysql:
-    driver: bridge
-  mongo:
-    driver: bridge
-  app:
-    driver: bridge
