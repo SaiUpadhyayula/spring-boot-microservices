@@ -1,33 +1,47 @@
+---
+version: '3'
 services:
   ## MySQL Docker Compose Config
-  mysql:
-    container_name: mysql
-    image: mysql:8.0.28
-    restart: unless-stopped
+  postgres-order:
+    container_name: postgres-order
+    image: postgres
     environment:
-      MYSQL_DATABASE: 'db'
-      MYSQL_USER: 'user'
-      MYSQL_PASSWORD: 'mysql'
-      MYSQL_ROOT_PASSWORD: 'mysql'
-    ports:
-      - 3316:3306
-    expose:
-      - 3316
+      POSTGRES_DB: order-service
+      POSTGRES_USER: ptechie
+      POSTGRES_PASSWORD: password
+      PGDATA: /data/postgres
     volumes:
-      - ./my-sql-data:/var/lib/mysql
+      - ./postgres-order:/data/postgres
+    expose:
+      - "5431"
+    ports:
+      - "5431:5431"
+    command: -p 5431
+    restart: unless-stopped
+
+  postgres-inventory:
+    container_name: postgres-inventory
+    image: postgres
+    environment:
+      POSTGRES_DB: inventory-service
+      POSTGRES_USER: ptechie
+      POSTGRES_PASSWORD: password
+      PGDATA: /data/postgres
+    volumes:
+      - ./postgres-inventory:/data/postgres
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
 
   ## Mongo Docker Compose Config
   mongo:
     container_name: mongo
     image: mongo:4.4.14-rc0-focal
     restart: unless-stopped
-    environment:
-      MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: p9ssw0rd
     ports:
-      - 27018:27017
+      - "27017:27017"
     expose:
-      - 27018
+      - "27017"
     volumes:
       - ./mongo-data:/data/db
 
@@ -53,60 +67,67 @@ services:
       DB_DATABASE: keycloak
       DB_USER: keycloak
       DB_PASSWORD: password
-      KEYCLOAK_USER: admin
-      KEYCLOAK_PASSWORD: admin
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
     ports:
-      - 8181:8080
+      - "8080:8080"
     volumes:
-      - ./realms/realm-export.json:/opt/keycloak/data/import/realm.json:ro
+      - ./realms/:/opt/keycloak/data/import/
     depends_on:
       - keycloak-mysql
 
-  ## Zookeeper Config
   zookeeper:
-    image: zookeeper:3.7.1
+    image: confluentinc/cp-zookeeper:7.0.1
     container_name: zookeeper
-    ports:
-      - 2181:2181
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
 
-  ## Kafka Config
-  kafka:
+  broker:
     image: confluentinc/cp-kafka:7.0.1
-    container_name: kafka
+    container_name: broker
     ports:
-      - 9092:9092
+      - "9092:9092"
     depends_on:
       - zookeeper
     environment:
+      KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: 'zookeeper:2181'
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_INTERNAL:PLAINTEXT
+      KAFKA_ADVERTISED_PORT: 9092
+      KAFKA_ADVERTISED_HOST_NAME: broker
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
 
   ## Zipkin
   zipkin:
     image: openzipkin/zipkin
     container_name: zipkin
     ports:
-      - 9411:9411
+      - "9411:9411"
 
   ## Eureka Server
   discovery-server:
-    image: saiupadhyayula007/discovery-server:v1
+    image: discovery-server:1.0-SNAPSHOT
     container_name: discovery-server
     ports:
-      - 8761:8761
+      - "8761:8761"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     depends_on:
       - zipkin
 
   api-gateway:
-    image: saiupadhyayula007/api-gateway:v1
+    image: api-gateway:1.0-SNAPSHOT
     container_name: api-gateway
     ports:
-      - 8080:8080
+      - "8181:8080"
+    expose:
+      - "8181"
     environment:
       - SPRING_PROFILES_ACTIVE=docker
+      - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SECURITY= TRACE
     depends_on:
       - zipkin
       - discovery-server
@@ -115,8 +136,7 @@ services:
   ## Product-Service Docker Compose Config
   product-service:
     container_name: product-service
-    image: saiupadhyayula007/product-service:v1
-    mem_limit: 512m
+    image: product-service:1.0-SNAPSHOT
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     depends_on:
@@ -127,13 +147,13 @@ services:
   ## Order-Service Docker Compose Config
   order-service:
     container_name: order-service
-    image: saiupadhyayula007/order-service:v1
-    mem_limit: 512m
+    image: order-service:1.0-SNAPSHOT
     environment:
       - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-order:5431/order-service
     depends_on:
-      - mysql
-      - kafka
+      - postgres-order
+      - broker
       - zipkin
       - discovery-server
       - api-gateway
@@ -141,24 +161,23 @@ services:
   ## Inventory-Service Docker Compose Config
   inventory-service:
     container_name: inventory-service
-    image: saiupadhyayula007/inventory-service:v1
-    mem_limit: 512m
+    image: inventory-service:1.0-SNAPSHOT
     environment:
       - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-inventory:5432/inventory-service
     depends_on:
-      - mysql
+      - postgres-inventory
       - discovery-server
       - api-gateway
 
   ## Notification-Service Docker Compose Config
   notification-service:
     container_name: notification-service
-    image: saiupadhyayula007/notification-service:v1
-    mem_limit: 512m
+    image: notification-service:1.0-SNAPSHOT
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     depends_on:
       - zipkin
-      - kafka
+      - broker
       - discovery-server
       - api-gateway

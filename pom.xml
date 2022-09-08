@@ -28,7 +28,6 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <spring-cloud.version>2021.0.2</spring-cloud.version>
-        <dockerhub.username>saiupadhyayula007</dockerhub.username>
         <docker.tag>v1</docker.tag>
     </properties>
 
@@ -72,8 +71,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>16</source>
-                    <target>16</target>
+                    <source>17</source>
+                    <target>17</target>
                 </configuration>
             </plugin>
         </plugins>
