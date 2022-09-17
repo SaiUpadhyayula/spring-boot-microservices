@@ -15,19 +15,21 @@ import java.math.BigDecimal;
 @RequiredArgsConstructor
 public class ProductServiceApplication implements CommandLineRunner {
 
-	private final ProductRepository productRepository;
+    private final ProductRepository productRepository;
 
-	public static void main(String[] args) {
-		SpringApplication.run(ProductServiceApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(ProductServiceApplication.class, args);
+    }
 
-	@Override
-	public void run(String... args) {
-		Product product = new Product();
-		product.setName("iPhone 13");
-		product.setDescription("iPhone 13");
-		product.setPrice(BigDecimal.valueOf(1000));
+    @Override
+    public void run(String... args) {
+        if (productRepository.count() < 1) {
+            Product product = new Product();
+            product.setName("iPhone 13");
+            product.setDescription("iPhone 13");
+            product.setPrice(BigDecimal.valueOf(1000));
 
-		productRepository.save(product);
-	}
+            productRepository.save(product);
+        }
+    }
 }
