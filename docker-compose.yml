@@ -1,5 +1,5 @@
 ---
-version: '3'
+version: '3.7'
 services:
   ## MySQL Docker Compose Config
   postgres-order:
@@ -17,7 +17,7 @@ services:
     ports:
       - "5431:5431"
     command: -p 5431
-    restart: unless-stopped
+    restart: always
 
   postgres-inventory:
     container_name: postgres-inventory
@@ -31,13 +31,13 @@ services:
       - ./postgres-inventory:/data/postgres
     ports:
       - "5432:5432"
-    restart: unless-stopped
+    restart: always
 
   ## Mongo Docker Compose Config
   mongo:
     container_name: mongo
     image: mongo:4.4.14-rc0-focal
-    restart: unless-stopped
+    restart: always
     ports:
       - "27017:27017"
     expose:
@@ -79,6 +79,8 @@ services:
   zookeeper:
     image: confluentinc/cp-zookeeper:7.0.1
     container_name: zookeeper
+    ports:
+      - "2181:2181"
     environment:
       ZOOKEEPER_CLIENT_PORT: 2181
       ZOOKEEPER_TICK_TIME: 2000
@@ -110,7 +112,6 @@ services:
   discovery-server:
     image: saiupadhyayula007/discovery-server:latest
     container_name: discovery-server
-    pull_policy: always
     ports:
       - "8761:8761"
     environment:
@@ -121,7 +122,6 @@ services:
   api-gateway:
     image: saiupadhyayula007/api-gateway:latest
     container_name: api-gateway
-    pull_policy: always
     ports:
       - "8181:8080"
     expose:
@@ -138,7 +138,6 @@ services:
   product-service:
     container_name: product-service
     image: saiupadhyayula007/product-service:latest
-    pull_policy: always
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     depends_on:
@@ -150,7 +149,6 @@ services:
   order-service:
     container_name: order-service
     image: saiupadhyayula007/order-service:latest
-    pull_policy: always
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-order:5431/order-service
@@ -165,7 +163,6 @@ services:
   inventory-service:
     container_name: inventory-service
     image: saiupadhyayula007/inventory-service:latest
-    pull_policy: always
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-inventory:5432/inventory-service
@@ -178,7 +175,6 @@ services:
   notification-service:
     container_name: notification-service
     image: saiupadhyayula007/notification-service:latest
-    pull_policy: always
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     depends_on:
@@ -191,7 +187,7 @@ services:
   prometheus:
     image: prom/prometheus:v2.37.1
     container_name: prometheus
-    restart: unless-stopped
+    restart: always
     ports:
       - "9090:9090"
     volumes:
@@ -205,7 +201,7 @@ services:
   grafana:
     image: grafana/grafana-oss:8.5.2
     container_name: grafana
-    restart: unless-stopped
+    restart: always
     ports:
       - "3000:3000"
     links:
