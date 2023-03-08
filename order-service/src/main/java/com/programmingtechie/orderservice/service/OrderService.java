@@ -39,6 +39,7 @@ public class OrderService {
                 .toList();
 
         order.setOrderLineItemsList(orderLineItems);
+        orderLineItems.forEach(itm -> itm.setOrder(order));
 
         List<String> skuCodes = order.getOrderLineItemsList().stream()
                 .map(OrderLineItems::getSkuCode)
