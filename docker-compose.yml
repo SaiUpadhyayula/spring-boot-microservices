@@ -110,7 +110,7 @@ services:
 
   ## Eureka Server
   discovery-server:
-    image: saiupadhyayula007/discovery-server:latest
+    image: microservices-tutorial/discovery-server:latest
     container_name: discovery-server
     ports:
       - "8761:8761"
@@ -120,7 +120,7 @@ services:
       - zipkin
 
   api-gateway:
-    image: saiupadhyayula007/api-gateway:latest
+    image: microservices-tutorial/api-gateway:latest
     container_name: api-gateway
     ports:
       - "8181:8080"
@@ -137,7 +137,7 @@ services:
   ## Product-Service Docker Compose Config
   product-service:
     container_name: product-service
-    image: saiupadhyayula007/product-service:latest
+    image: microservices-tutorial/product-service:latest
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     depends_on:
@@ -148,7 +148,7 @@ services:
   ## Order-Service Docker Compose Config
   order-service:
     container_name: order-service
-    image: saiupadhyayula007/order-service:latest
+    image: microservices-tutorial/order-service:latest
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-order:5431/order-service
@@ -162,7 +162,7 @@ services:
   ## Inventory-Service Docker Compose Config
   inventory-service:
     container_name: inventory-service
-    image: saiupadhyayula007/inventory-service:latest
+    image: microservices-tutorial/inventory-service:latest
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-inventory:5432/inventory-service
@@ -174,7 +174,7 @@ services:
   ## Notification-Service Docker Compose Config
   notification-service:
     container_name: notification-service
-    image: saiupadhyayula007/notification-service:latest
+    image: microservices-tutorial/notification-service:latest
     environment:
       - SPRING_PROFILES_ACTIVE=docker
     depends_on:
