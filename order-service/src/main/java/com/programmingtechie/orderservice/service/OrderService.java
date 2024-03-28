@@ -9,7 +9,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -23,21 +22,18 @@ public class OrderService {
         Order order = new Order();
         order.setOrderNumber(UUID.randomUUID().toString());
 
-        List<OrderLineItems> orderLineItems = orderRequest.getOrderLineItemsDtoList()
+        orderRequest.orderLineItemsDtoList()
                 .stream()
-                .map(this::mapToDto)
-                .toList();
-
-        order.setOrderLineItemsList(orderLineItems);
-
+                .map(this::map)
+                .forEach(order::addOrderLineItems);
         orderRepository.save(order);
     }
 
-    private OrderLineItems mapToDto(OrderLineItemsDto orderLineItemsDto) {
+    private OrderLineItems map(OrderLineItemsDto orderLineItemsDto) {
         OrderLineItems orderLineItems = new OrderLineItems();
-        orderLineItems.setPrice(orderLineItemsDto.getPrice());
-        orderLineItems.setQuantity(orderLineItemsDto.getQuantity());
-        orderLineItems.setSkuCode(orderLineItemsDto.getSkuCode());
+        orderLineItems.setPrice(orderLineItemsDto.price());
+        orderLineItems.setQuantity(orderLineItemsDto.quantity());
+        orderLineItems.setSkuCode(orderLineItemsDto.skuCode());
         return orderLineItems;
     }
 }

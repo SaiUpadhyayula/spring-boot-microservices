@@ -19,9 +19,9 @@ public class ProductService {
 
     public void createProduct(ProductRequest productRequest) {
         Product product = Product.builder()
-                .name(productRequest.getName())
-                .description(productRequest.getDescription())
-                .price(productRequest.getPrice())
+                .name(productRequest.name())
+                .description(productRequest.description())
+                .price(productRequest.price())
                 .build();
 
         productRepository.save(product);
@@ -35,11 +35,7 @@ public class ProductService {
     }
 
     private ProductResponse mapToProductResponse(Product product) {
-        return ProductResponse.builder()
-                .id(product.getId())
-                .name(product.getName())
-                .description(product.getDescription())
-                .price(product.getPrice())
-                .build();
+        return new ProductResponse(product.getId(), product.getName(),
+                product.getDescription(), product.getPrice());
     }
 }
