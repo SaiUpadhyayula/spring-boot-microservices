@@ -1,5 +1,6 @@
 package com.programmingtechie.orderservice.service;
 
+import com.programmingtechie.orderservice.client.InventoryClient;
 import com.programmingtechie.orderservice.dto.OrderRequest;
 import com.programmingtechie.orderservice.model.Order;
 import com.programmingtechie.orderservice.repository.OrderRepository;
@@ -15,10 +16,16 @@ import java.util.UUID;
 public class OrderService {
 
     private final OrderRepository orderRepository;
+    private final InventoryClient inventoryClient;
 
     public void placeOrder(OrderRequest orderRequest) {
-        var order = mapToOrder(orderRequest);
-        orderRepository.save(order);
+        boolean inStock = inventoryClient.isInStock(orderRequest.skuCode(), orderRequest.quantity());
+        if (inStock) {
+            var order = mapToOrder(orderRequest);
+            orderRepository.save(order);
+        } else {
+            throw new RuntimeException("Product with Skucode " + orderRequest.skuCode() + "is not in stock");
+        }
     }
 
     private static Order mapToOrder(OrderRequest orderRequest) {
